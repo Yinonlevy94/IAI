@@ -1,0 +1,11 @@
+# flask is the core web framework
+Flask==2.3.3
+# flask-cors enables strict cross-origin requests
+Flask-CORS==4.0.0
+# python-dotenv loads env vars from a .env file for 12-factor config
+python-dotenv==1.0.0
+# gunicorn is a robust production wsgi server
+gunicorn==21.2.0
+#pytest is my choice for a backend testing framework
+pytest==7.4.3
+
