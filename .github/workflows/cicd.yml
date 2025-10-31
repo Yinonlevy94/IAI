@@ -249,3 +249,81 @@ jobs:
           cosign sign --yes ${{ env.FRONTEND_ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
           cosign sign --yes ${{ env.FRONTEND_ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
           
+  deploy:
+    name: Deploy to cluster
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]  # dependant on be and fe tasks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout SCM
+        uses: actions/checkout@v4
+      
+      # setup kubectl
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+      
+      # configure cluster access using kubeconfig file with generated sa's token 
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          chmod 600 ~/.kube/config
+          kubectl cluster-info
+      
+      # create ecr pull secrets in both fe and be namespaces
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Create ECR secrets
+        run: |
+          # get ecr token
+          TOKEN=$(aws ecr get-login-password --region ${{ env.AWS_REGION }})
+          
+          # create or update secret in ns (ecr's secrets rotate every 12h, so we'll need to fetch one each deployment)
+          kubectl create namespace backend --dry-run=client -o yaml | kubectl apply -f -
+          kubectl delete secret ecr-secret -n backend --ignore-not-found
+          kubectl create secret docker-registry ecr-secret \
+            --docker-server=${{ env.BACKEND_ECR_REGISTRY }} \
+            --docker-username=AWS \
+            --docker-password=$TOKEN \
+            --namespace=backend
+          
+          
+          kubectl create namespace frontend --dry-run=client -o yaml | kubectl apply -f -
+          kubectl delete secret ecr-secret -n frontend --ignore-not-found
+          kubectl create secret docker-registry ecr-secret \
+            --docker-server=${{ env.FRONTEND_ECR_REGISTRY }} \
+            --docker-username=AWS \
+            --docker-password=$TOKEN \
+            --namespace=frontend
+      
+      # deploy backend
+      - name: Deploy backend
+        run: |
+          kubectl apply -f k8s/backend-deployment.yml
+          kubectl apply -f k8s/service.yml
+          kubectl rollout status deployment/backend -n backend --timeout=5m
+      
+      # deploy frontend
+      - name: Deploy frontend
+        run: |
+          kubectl apply -f k8s/frontend-deployment.yml
+          kubectl apply -f k8s/service+ingress.yml
+          kubectl rollout status deployment/frontend -n frontend --timeout=5m
+      
+      # verify deployment
+      - name: Verify deployment
+        run: |
+          echo "######### be pods #########"
+          kubectl get pods -n backend
+          echo "######### fe pods #########"
+          kubectl get pods -n frontend
+          echo "######### ingress rule #########"
+          kubectl get ingress -n frontend
