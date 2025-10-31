@@ -1,0 +1,33 @@
+# dedicated ns for be
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: backend
+---
+# deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      # run on 'paas'
+      nodeSelector:
+        kubernetes.io/hostname: paas
+      imagePullSecrets:
+        - name: ecr-secret
+      containers:
+      - name: backend
+        image: 422491854465.dkr.ecr.us-east-1.amazonaws.com/iai-task-backend:latest
+        ports:
+        - containerPort: 8000
+

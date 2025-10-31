@@ -1,0 +1,36 @@
+# namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: frontend
+---
+# deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      # run on node named paas
+      nodeSelector:
+        kubernetes.io/hostname: paas
+      imagePullSecrets:
+        - name: ecr-secret
+      containers:
+      - name: frontend
+        image: 422491854465.dkr.ecr.us-east-1.amazonaws.com/iai-task-frontend:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: BACKEND_URL
+          value: "http://backend-service.backend.svc.cluster.local:8000"
+

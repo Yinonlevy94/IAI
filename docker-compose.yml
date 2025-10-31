@@ -1,17 +1,13 @@
-# docker-compose for local testing
-# containers are prod-ready and can communicate with each other
-# same images will be pushed to ecr
-
 
 services:
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: users-backend
+    container_name: backend
     restart: unless-stopped
     ports:
-      - "8000:8000"  # expose for local testing
+      - "8000:8000"  # exposed for local testing
     environment:
       - PORT=8000
       - SECRET_KEY=$${#####REMEMBER TO CHANGE WHEN APPLYING TO KUBERNETES!!!!#####}      #flask REQUIRES! it for cookies and stuff
@@ -30,12 +26,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: users-frontend
+    container_name: frontend
     restart: unless-stopped
     ports:
-      - "8080:8080"  # expose for local testing
+      - "8080:8080"  # same
     environment:
-      # tell frontend where backend is (for local testing)
+      # tell the frontend where the backend is in order for it to reach within the tests
       - VITE_API_BASE=http://backend:8000/api
     depends_on:
       backend:
