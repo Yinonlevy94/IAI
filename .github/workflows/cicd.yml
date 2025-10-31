@@ -307,15 +307,15 @@ jobs:
       # deploy backend
       - name: Deploy backend
         run: |
-          kubectl apply -f k8s/backend-deployment.yml
-          kubectl apply -f k8s/service.yml
+          kubectl apply -f backend/backend-deployment.yml
+          kubectl apply -f backend/service.yml
           kubectl rollout status deployment/backend -n backend --timeout=5m
       
       # deploy frontend
       - name: Deploy frontend
         run: |
-          kubectl apply -f k8s/frontend-deployment.yml
-          kubectl apply -f k8s/service+ingress.yml
+          kubectl apply -f frontend/frontend-deployment.yml
+          kubectl apply -f frontend/service+ingress.yml
           kubectl rollout status deployment/frontend -n frontend --timeout=5m
       
       # verify deployment
