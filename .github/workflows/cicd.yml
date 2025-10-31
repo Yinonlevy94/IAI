@@ -269,7 +269,9 @@ jobs:
       - name: Configure kubectl
         run: |
           mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
+          cat > ~/.kube/config << 'EOF'
+          ${{ secrets.KUBECONFIG }}
+          EOF
           chmod 600 ~/.kube/config
           kubectl cluster-info
       
