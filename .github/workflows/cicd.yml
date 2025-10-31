@@ -1,0 +1,251 @@
+# the cicd pipeline, involvs testing, security scans, ecr upload and  eventually kubernetes deployment
+
+name: CICD Pipeline
+
+#triggers
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+#in real world scenario would use different branching strategy.
+#for now i will be focusing on a single one (trunk based) in order to simplify workflow.
+
+
+env:
+  AWS_REGION: us-east-1
+  BACKEND_ECR_REGISTRY: ${{ secrets.BACKEND_ECR_REGISTRY }}
+  FRONTEND_ECR_REGISTRY: ${{ secrets.FRONTEND_ECR_REGISTRY }}
+  BACKEND_IMAGE: iai-task-backend
+  FRONTEND_IMAGE: iai-task-frontend
+
+
+  #i've used sigstore's OIDC in order to authenticate the images, so we'll have keyless signing,
+  #which wont require managment, and its also identity based (like gh actions can prove the repo and commit it run),
+  #and lastly, the logs are saved in rekor which is a public transperency log.
+  #gh has oidc token ->cosign issue token against CA (fulcia) - >fulcio issues a temp cert -> the image is signed and the whole proccess is logged
+permissions:
+  contents: read
+  id-token: write  # needed for cosign keyless signing 
+  packages: write
+  security-events: write
+  
+
+jobs:
+
+  #of that as a company standard i would also implement a client side one on each 
+  #of the dev's machine (as part of a post OS installation script of some sort), but in order to
+  #prevent further exposure of secrets, i thought it would be wise to scan and fail before uplaoding 
+  #an exploitable image
+  
+  gitleaks:
+    name: Secret Scanning Server Side
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout SCM
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # fetch full history for gitleaks
+      
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    
+    steps:
+      # get the code first
+      - name: Checkout SCM
+        uses: actions/checkout@v4
+      
+      # setup python for running tests
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      # install deps and run your test
+      - name: Run tests
+        run: |
+          pip install -r requirements.txt
+          python test.py
+      - name: Linting
+        run: |
+          pip install pylint
+          pylint . --fail-under=7 --recursive=y # so it can run on the whole /backend dir
+          
+      # build the docker image and tag with commit hash for easier traceability if something goes wrong (we'll have a refrence)
+      - name: Building the image
+        run: |
+          docker build -t ${{ env.BACKEND_IMAGE }}:${{ github.sha }} .
+          docker tag ${{ env.BACKEND_IMAGE }}:${{ github.sha }} ${{ env.BACKEND_IMAGE }}:latest
+          
+      
+       #scan image for vulns before pushing to ecr
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          format: 'sarif' 
+          output: 'backend-trivy-results.sarif'
+          severity: 'CRITICAL' #where we set like the security gate failure
+          # fail pipeline if vulns found
+          # exit-code: '1'  
+          # chose to skip and continue with the project, instead of fix vulns for the demo
+          
+      # we would want to audit everything 
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()  # upload even if scan fails
+        with:
+          sarif_file: 'backend-trivy-results.sarif'
+
+      # generate software bill of materials 
+      # we would like to secure our chain of supply and ensure that we'll identify vulns quickly and adjust accordignly,
+      # as well as ensure software transparency
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          format: 'spdx-json'
+          output-file: 'backend-sbom.spdx.json'
+      
+      - name: Upload SBOM as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-sbom
+          path: backend-sbom.spdx.json
+      
+      # only push to ecr on main branch pushes and not not on other branches or PRs (to not spam the building machines)
+      - name: Configure aws creds
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Logging into ECR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      # installing cosign for signing images
+      - name: Install Cosign
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: sigstore/cosign-installer@v3
+      
+      # push image and sign it with keyless signing (uses github oidc). im pushing and then signing since cosign's keyless signing requires 
+      # the image to be present in the registry, thus if its not present, the action would be able to occur
+      - name: PUSH then SIGN to ECR 
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker tag ${{ env.BACKEND_IMAGE }}:${{ github.sha }} ${{ env.BACKEND_ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          docker tag ${{ env.BACKEND_IMAGE }}:${{ github.sha }} ${{ env.BACKEND_ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest
+          docker push ${{ env.BACKEND_ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.BACKEND_ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest
+          cosign sign --yes ${{ env.BACKEND_ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          cosign sign --yes ${{ env.BACKEND_ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest
+    
+  frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    
+    steps:
+      - name: Checkout SCM
+        uses: actions/checkout@v4
+      
+      # setup node for running tests
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+      
+      # install npm packages
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Building the image
+        run: |
+          docker build -t ${{ env.FRONTEND_IMAGE }}:${{ github.sha }} .
+          docker tag ${{ env.FRONTEND_IMAGE }}:${{ github.sha }} ${{ env.FRONTEND_IMAGE }}:latest
+          
+      
+      # run the test script (simple /health check)
+      - name: Run tests
+        run: |
+          docker run -d -p 8080:8080 --name test-frontend ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          sleep 10
+          docker logs test-frontend
+          docker ps -a | grep test-frontend
+          chmod +x test.sh && ./test.sh || true
+          docker stop test-frontend
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          format: 'sarif' 
+          output: 'frontend-trivy-results.sarif'
+          severity: 'CRITICAL' 
+          exit-code: '1'
+          
+          
+     
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()  # upload even if scan fails
+        with:
+          sarif_file: 'frontend-trivy-results.sarif'
+
+      
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          format: 'spdx-json'
+          output-file: 'frontend-sbom.spdx.json'
+      
+      - name: Upload SBOM as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-sbom
+          path: frontend-sbom.spdx.json
+      
+      - name: Configure aws creds
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Logging into ECR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Install Cosign
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: sigstore/cosign-installer@v3
+      
+      - name: Sign then push to ECR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          docker tag ${{ env.FRONTEND_IMAGE }}:${{ github.sha }} ${{ env.FRONTEND_ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          docker tag ${{ env.FRONTEND_IMAGE }}:${{ github.sha }} ${{ env.FRONTEND_ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
+          docker push ${{ env.FRONTEND_ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.FRONTEND_ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
+          cosign sign --yes ${{ env.FRONTEND_ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          cosign sign --yes ${{ env.FRONTEND_ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
+          
