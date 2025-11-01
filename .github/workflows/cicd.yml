@@ -283,23 +283,28 @@ jobs:
           
           # create or update secret in ns (ecr's secrets rotate every 12h, so we'll need to fetch one each deployment)
           #idempotent ns creation so it wont fail the pipeline: generate to a yml, then apply it
+          
           kubectl create namespace backend --dry-run=client -o yaml | kubectl apply -f -
-          kubectl create secret docker-registry ecr-secret \
-            --docker-server=${{ env.BACKEND_ECR_REGISTRY }} \
+          
+          kubectl -n backend create secret docker-registry ecr-secret \
+            --docker-server="${{ env.BACKEND_ECR_REGISTRY }}" \
             --docker-username=AWS \
-            --docker-password=$TOKEN \
+            --docker-password="$TOKEN" \
             #idempotent secreet creation so that the old (still valid) secret wont be needed to be deleted
             #and also to make the pipeline continue even if theres already one
             --dry-run=client -o yaml > ecr-be.yml
-          kubectl apply -f /ecr-be.yml
+            
+          kubectl apply -f ecr-be.yml
           
           
           kubectl create namespace frontend --dry-run=client -o yaml | kubectl apply -f -
+          
           kubectl create secret docker-registry ecr-secret \
             --docker-server=${{ env.FRONTEND_ECR_REGISTRY }} \
             --docker-username=AWS \
             --docker-password=$TOKEN \
             --dry-run=client -o yaml > ecr-fe.yml
+            
           kubectl apply -f /ecr-fe.yml
 
       
