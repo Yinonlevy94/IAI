@@ -47,25 +47,6 @@ class TestListUsers:
             assert 'email' not in user
 
 
-# class TestGetUser:
-#     """test getting a single user by id"""
-    
-#     def test_get_user_valid(self, client):
-#         response = client.get('/api/users/1')
-#         assert response.status_code == 200
-#         assert response.json['user']['id'] == '1'
-    
-#     def test_get_user_invalid_format(self, client):
-#         """non-numeric ids should return 400"""
-#         response = client.get('/api/users/invalid')
-#         assert response.status_code == 400
-    
-#     def test_get_user_not_found(self, client):
-#         """non-existent ids should return 404"""
-#         response = client.get('/api/users/999')
-#         assert response.status_code == 404
-
-
 class TestSearch:
     """test search endpoint with query params"""
     
