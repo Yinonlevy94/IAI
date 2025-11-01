@@ -256,6 +256,12 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
+      - name: Load kubeconfig from param store
+        run: |
+          aws ssm get-parameter --name "/k8s/kubeconfig" --with-decryption \
+            --query "Parameter.Value" --output text | base64 -d > $HOME/.kube/config
+          kubectl --request-timeout=5s auth can-i get pods -A
+          
       - name: Checkout SCM
         uses: actions/checkout@v4
           
