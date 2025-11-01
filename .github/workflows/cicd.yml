@@ -282,9 +282,9 @@ jobs:
           TOKEN=$(aws ecr get-login-password --region ${{ env.AWS_REGION }})
           
           # create or update secret in ns (ecr's secrets rotate every 12h, so we'll need to fetch one each deployment)
+          #idempotent ns creation so it wont fail the pipeline: generate to a yml, then apply it
           kubectl create namespace backend --dry-run=client -o yaml | kubectl apply -f -
-          kubectl delete secret ecr-secret -n backend --ignore-not-found
-          kubectl create secret docker-registry ecr-secret \
+                    kubectl create secret docker-registry ecr-secret \
             --docker-server=${{ env.BACKEND_ECR_REGISTRY }} \
             --docker-username=AWS \
             --docker-password=$TOKEN \
@@ -292,7 +292,6 @@ jobs:
           
           
           kubectl create namespace frontend --dry-run=client -o yaml | kubectl apply -f -
-          kubectl delete secret ecr-secret -n frontend --ignore-not-found
           kubectl create secret docker-registry ecr-secret \
             --docker-server=${{ env.FRONTEND_ECR_REGISTRY }} \
             --docker-username=AWS \
