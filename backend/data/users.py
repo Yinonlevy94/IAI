@@ -260,17 +260,17 @@ def get_user_by_id(user_id: int) -> Optional[Dict[str, str]]:
     return None
 
 
-# def search_user_by_id(user_id: str) -> Optional[Dict[str, str]]:
-#     """
-#     search and return user by id (without email field), or None if not found.
+ def search_user_by_id(user_id: str) -> Optional[Dict[str, str]]:
+     """
+     search and return user by id (without email field), or None if not found.
 
-#     params:
-#         user_id (str): uuid to search for
-#     returns:
-#         dict | None: user dict without 'email' if found, otherwise None
-#     """
-#     # identical semantics to get_user_by_id; kept to satisfy the api contract
-#     for u in USERS:
-#         if u["id"] == user_id:
-#             return _strip_email(u)
-#     return None
+     params:
+         user_id (str): uuid to search for
+     returns:
+         dict | None: user dict without 'email' if found, otherwise None
+     """
+     # identical semantics to get_user_by_id; kept to satisfy the api contract
+     for u in USERS:
+         if u["id"] == user_id:
+             return _strip_email(u)
+     return None
