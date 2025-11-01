@@ -9,7 +9,9 @@ This project delivers a full CI/CD pipeline for deploying cloud-native microserv
 ##  High-Level Architecture
 
 
-![](image.png)
+<p align="center">
+  <img src="./image.png" width="900" />
+</p>
 
 
 - React frontend + Flask backend
