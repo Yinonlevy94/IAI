@@ -15,7 +15,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 
 # import data access functions from the mock users module
-from data.users import get_all_users, get_user_by_id, search_user_by_id
+from data.users import get_all_users, search_user_by_id
 
 
 # -----------------------------------------------------------------------------
