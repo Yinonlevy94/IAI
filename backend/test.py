@@ -1,7 +1,6 @@
 """
 test_app.py
-backend tests - covers api endpoints and basic logic
-run: pytest test_app.py -v
+backend tests that covers api endpoints and basic logic
 """
 
 import pytest
@@ -12,8 +11,8 @@ from app import create_app
 def client():
     """create test client for making requests"""
     app = create_app()
-    app.config['TESTING'] = True
-    return app.test_client()
+    app.config['TESTING'] = True #tell flask that testing is made, whic leads it to drop some errors catching
+    return app.test_client() #creates fake browser to call the api
 
 
 class TestHealth:
@@ -36,7 +35,7 @@ class TestListUsers:
         # should have users array and total count
         assert 'users' in data
         assert 'total' in data
-        assert len(data['users']) > 0
+        assert len(data['users']) = 21
     
     def test_email_not_exposed(self, client):
         """emails should never be in the response"""
