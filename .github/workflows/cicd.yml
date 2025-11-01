@@ -288,7 +288,10 @@ jobs:
             --docker-server=${{ env.BACKEND_ECR_REGISTRY }} \
             --docker-username=AWS \
             --docker-password=$TOKEN \
-            --namespace=backend
+            #idempotent secreet creation so that the old (still valid) secret wont be needed to be deleted
+            #and also to make the pipeline continue even if theres already one
+            --dry-run=client -o yaml | kubectl apply -f -
+
           
           
           kubectl create namespace frontend --dry-run=client -o yaml | kubectl apply -f -
@@ -296,7 +299,8 @@ jobs:
             --docker-server=${{ env.FRONTEND_ECR_REGISTRY }} \
             --docker-username=AWS \
             --docker-password=$TOKEN \
-            --namespace=frontend
+            --dry-run=client -o yaml | kubectl apply -f -
+
       
       # deploy backend
       - name: Deploy backend
