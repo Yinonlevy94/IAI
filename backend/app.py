@@ -90,14 +90,11 @@ def create_app() -> Flask:
     # load env vars from .env if present 
     load_dotenv()
 
-    # set up basic console logging; errors will go to stderr
+    # set up basic console logging, errors will go to stderr
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     logger = logging.getLogger(__name__)
 
     app = Flask(__name__)
-
-    # secret key for session/signing; must be overridden in real deployments
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "change-this-in-production")
 
     # set up strict cors using a whitelist from env (no wildcard)
     origins = get_allowed_origins(os.getenv("CORS_ORIGINS", ""))
