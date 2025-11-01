@@ -137,32 +137,7 @@ def create_app() -> Flask:
             logger.exception("failed to list users: %s", exc)
             return jsonify({"error": "internal server error"}), 500
 
-    # -------------------------------------------------------------------------
-    # api: get user by id
-    # -------------------------------------------------------------------------
-    @app.get("/api/users/<user_id>")
-    def api_get_user(user_id: str):
-        """
-        get a single user by id.
-        returns:
-            200 json: {"user": {...}}
-            400 json if id format is invalid
-            404 json if user not found
-            500 json on server error
-        """
-        try:
-            if not is_valid_id(user_id):
-                return jsonify({"error": "invalid user id format"}), 400
-
-            user = get_user_by_id(user_id)
-            if user is None:
-                return jsonify({"error": "user not found"}), 404
-
-            return jsonify({"user": user}), 200
-        except Exception as exc:
-            logger.exception("failed to get user %s: %s", user_id, exc)
-            return jsonify({"error": "internal server error"}), 500
-
+    
     # -------------------------------------------------------------------------
     # api: search user by id via query param
     # -------------------------------------------------------------------------
