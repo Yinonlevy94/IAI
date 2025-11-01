@@ -258,33 +258,9 @@ jobs:
     steps:
       - name: Checkout SCM
         uses: actions/checkout@v4
-        
-      - name: Setup kubeconfig from SSM
-        run: |
-          mkdir -p ~/.kube
-          aws ssm get-parameter \
-            --name kubeconfig \
-            --with-decryption \
-            --query 'Parameter.Value' \
-            --output text > ~/.kube/config
-          chmod 600 ~/.kube/config
-          
-      # setup kubectl
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'latest'
-      
-      # configure cluster access using kubeconfig file with generated sa's token 
-      - name: Set Kubernetes context
-        uses: azure/k8s-set-context@v3
-        with:
-          method: kubeconfig
-          kubeconfig: ${{ secrets.KUBECONFIG }}
-          
           
       - name: Verify connection
-        run: kubectl cluster-info
+        run: kubectl cluster-info #i'll just use the host's already configured kubeconfig
       
       # create ecr pull secrets in both fe and be namespaces
       - name: Configure AWS credentials
