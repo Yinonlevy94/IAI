@@ -267,13 +267,12 @@ jobs:
       
       # configure cluster access using kubeconfig file with generated sa's token 
       - name: Configure kubectl
-        run: |
-          mkdir -p ~/.kube
-          cat > ~/.kube/config << 'EOF'
-          ${{ secrets.KUBECONFIG }}
-          EOF
-          chmod 600 ~/.kube/config
-          kubectl cluster-info
+        uses: tale/kubectl-action@v1
+        with:
+          base64-kube-config: ${{ secrets.KUBE_CONFIG_BASE64 }}
+          
+      - name: Verify connection
+        run: kubectl cluster-info
       
       # create ecr pull secrets in both fe and be namespaces
       - name: Configure AWS credentials
