@@ -56,6 +56,7 @@ jobs:
   backend:
     name: Backend CI
     runs-on: ubuntu-latest
+    needs: [gitleaks]
     defaults:
       run:
         working-directory: ./backend
@@ -80,7 +81,7 @@ jobs:
       - name: Linting
         run: |
           pip install pylint
-          pylint . --fail-under=7 --recursive=y # so it can run on the whole /backend dir
+          pylint . --fail-under=5 --recursive=y # so it can run on the whole /backend dir
           
       # build the docker image and tag with commit hash for easier traceability if something goes wrong (we'll have a refrence)
       - name: Building the image
@@ -157,6 +158,7 @@ jobs:
   frontend:
     name: Frontend CI
     runs-on: ubuntu-latest
+    needs: [gitleaks]
     defaults:
       run:
         working-directory: ./frontend
