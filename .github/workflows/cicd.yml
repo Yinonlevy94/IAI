@@ -259,7 +259,7 @@ jobs:
       - name: Load kubeconfig from param store
         run: |
           aws ssm get-parameter --name "kubeconfig" --with-decryption \
-            --query "Parameter.Value" --output text | base64 -d > $HOME/.kube/config
+            --query "Parameter.Value" --output text > $HOME/.kube/config
           kubectl --request-timeout=5s auth can-i get pods -A
           
       - name: Checkout SCM
