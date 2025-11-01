@@ -1,4 +1,6 @@
 
+# used this compose file just for local testing, it doesnt apply to prod.
+
 services:
   backend:
     build:
