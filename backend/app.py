@@ -1,219 +1,279 @@
 """
-app.py
-production-minded flask api with:
-- env-driven config and strict cors
-- json-only responses and consistent error handling
-- minimal security headers
-- user endpoints (list, get, search) backed by mock data
+users.py
+mock user records for a flask user-management api.
+
+notes
+- data is static but realistic and diverse
+- email stays server-side only and is stripped from responses
+- departments limited to: Engineering, HR, Sales, Marketing, Finance, Operations
 """
 
-import os
-import logging
-from typing import List
-from flask import Flask, jsonify, request, Response
-from flask_cors import CORS
-from dotenv import load_dotenv
+from typing import List, Dict, Optional
 
-# import data access functions from the mock users module
-from data.users import get_all_users, get_user_by_id, search_user_by_id
+# users are stored as a list of dictionaries per the requirements
+USERS: List[Dict[str, str]] = [
+    {
+        "id": "1",
+        "first_name": "liam",
+        "last_name": "cohen",
+        "date_of_birth": "1989-03-14",  # age 36
+        "job_title": "software engineer",
+        "department": "Engineering",
+        "email": "liam.cohen@company.com",
+        "created_at": "2025-02-02T10:15:23Z",
+    },
+    {
+        "id": "2",
+        "first_name": "noa",
+        "last_name": "levi",
+        "date_of_birth": "1996-07-30",  # age 29
+        "job_title": "hr generalist",
+        "department": "HR",
+        "email": "noa.levi@company.com",
+        "created_at": "2025-03-14T08:03:11Z",
+    },
+    {
+        "id": "3",
+        "first_name": "david",
+        "last_name": "rosen",
+        "date_of_birth": "1982-01-09",  # age 43
+        "job_title": "senior product manager",
+        "department": "Marketing",
+        "email": "david.rosen@company.com",
+        "created_at": "2025-01-05T14:22:45Z",
+    },
+    {
+        "id": "4",
+        "first_name": "maya",
+        "last_name": "katz",
+        "date_of_birth": "1990-10-21",  # age 35
+        "job_title": "data analyst",
+        "department": "Finance",
+        "email": "maya.katz@company.com",
+        "created_at": "2024-11-18T09:12:07Z",
+    },
+    {
+        "id": "5",
+        "first_name": "amir",
+        "last_name": "bar",
+        "date_of_birth": "1985-05-02",  # age 40
+        "job_title": "devops engineer",
+        "department": "Engineering",
+        "email": "amir.bar@company.com",
+        "created_at": "2025-02-14T07:40:59Z",
+    },
+    {
+        "id": "6",
+        "first_name": "tal",
+        "last_name": "shalev",
+        "date_of_birth": "1970-12-19",  # age 54
+        "job_title": "operations manager",
+        "department": "Operations",
+        "email": "tal.shalev@company.com",
+        "created_at": "2024-10-01T16:33:21Z",
+    },
+    {
+        "id": "7",
+        "first_name": "yael",
+        "last_name": "feldman",
+        "date_of_birth": "1992-04-27",  # age 33
+        "job_title": "marketing specialist",
+        "department": "Marketing",
+        "email": "yael.feldman@company.com",
+        "created_at": "2025-03-03T11:05:13Z",
+    },
+    {
+        "id": "8",
+        "first_name": "ron",
+        "last_name": "ben-ari",
+        "date_of_birth": "1987-09-05",  # age 38
+        "job_title": "account executive",
+        "department": "Sales",
+        "email": "ron.ben-ari@company.com",
+        "created_at": "2024-09-22T13:49:00Z",
+    },
+    {
+        "id": "9",
+        "first_name": "eden",
+        "last_name": "mizrahi",
+        "date_of_birth": "1998-02-11",  # age 27
+        "job_title": "finance associate",
+        "department": "Finance",
+        "email": "eden.mizrahi@company.com",
+        "created_at": "2025-01-28T18:22:34Z",
+    },
+    {
+        "id": "10",
+        "first_name": "itay",
+        "last_name": "oren",
+        "date_of_birth": "1968-06-16",  # age 57
+        "job_title": "solutions architect",
+        "department": "Engineering",
+        "email": "itay.oren@company.com",
+        "created_at": "2024-08-10T07:58:12Z",
+    },
+    {
+        "id": "11",
+        "first_name": "shira",
+        "last_name": "aviv",
+        "date_of_birth": "1984-11-03",  # age 40
+        "job_title": "people operations partner",
+        "department": "HR",
+        "email": "shira.aviv@company.com",
+        "created_at": "2024-12-19T12:00:00Z",
+    },
+    {
+        "id": "12",
+        "first_name": "yair",
+        "last_name": "shalom",
+        "date_of_birth": "1993-08-25",  # age 32
+        "job_title": "qa engineer",
+        "department": "Engineering",
+        "email": "yair.shalom@company.com",
+        "created_at": "2025-02-01T09:30:44Z",
+    },
+    {
+        "id": "13",
+        "first_name": "ella",
+        "last_name": "dahan",
+        "date_of_birth": "1990-01-17",  # age 35
+        "job_title": "content strategist",
+        "department": "Marketing",
+        "email": "ella.dahan@company.com",
+        "created_at": "2024-11-25T21:14:07Z",
+    },
+    {
+        "id": "14",
+        "first_name": "dan",
+        "last_name": "izraeli",
+        "date_of_birth": "1975-03-08",  # age 50
+        "job_title": "finance controller",
+        "department": "Finance",
+        "email": "dan.israeli@company.com",
+        "created_at": "2024-07-29T06:12:55Z",
+    },
+    {
+        "id": "15",
+        "first_name": "lea",
+        "last_name": "tal",
+        "date_of_birth": "1980-05-26",  # age 45
+        "job_title": "customer success manager",
+        "department": "Sales",
+        "email": "lea.tal@company.com",
+        "created_at": "2024-10-12T15:45:39Z",
+    },
+    {
+        "id": "16",
+        "first_name": "asaf",
+        "last_name": "zan",
+        "date_of_birth": "1999-12-04",  # age 25
+        "job_title": "junior software engineer",
+        "department": "Engineering",
+        "email": "asaf.zan@company.com",
+        "created_at": "2025-03-22T10:10:10Z",
+    },
+    {
+        "id": "17",
+        "first_name": "tamar",
+        "last_name": "golan",
+        "date_of_birth": "1986-07-12",  # age 39
+        "job_title": "brand manager",
+        "department": "Marketing",
+        "email": "tamar.golan@company.com",
+        "created_at": "2024-12-30T08:08:08Z",
+    },
+    {
+        "id": "18",
+        "first_name": "nir",
+        "last_name": "menachem",
+        "date_of_birth": "1970-02-14",  # age 55
+        "job_title": "head of operations",
+        "department": "Operations",
+        "email": "nir.menachem@company.com",
+        "created_at": "2024-06-18T19:20:21Z",
+    },
+    {
+        "id": "19",
+        "first_name": "ruth",
+        "last_name": "alon",
+        "date_of_birth": "1979-09-29",  # age 46
+        "job_title": "people n culture lead",
+        "department": "HR",
+        "email": "ruth.alon@company.com",
+        "created_at": "2024-08-21T04:50:33Z",
+    },
+    {
+        "id": "20",
+        "first_name": "gal",
+        "last_name": "peretz",
+        "date_of_birth": "1996-06-01",  # age 29
+        "job_title": "sales development representative",
+        "department": "Sales",
+        "email": "gal.peretz@company.com",
+        "created_at": "2025-02-09T22:01:59Z",
+    },
+    {
+        "id": "21",
+        "first_name": "inbar",
+        "last_name": "asher",
+        "date_of_birth": "1988-04-05",  # age 37
+        "job_title": "money analyst",
+        "department": "Finance",
+        "email": "inbar.asher@company.com",
+        "created_at": "2025-01-11T12:34:56Z",
+    },
+]
 
 
-# -----------------------------------------------------------------------------
-# helpers
-# -----------------------------------------------------------------------------
-def get_allowed_origins(raw: str) -> List[str]:
+def _strip_email(user: Dict[str, str]) -> Dict[str, str]:
     """
-    parse a comma-separated origins string from env into a clean list.
+    create a copy of a user dict without the 'email' field.
 
     params:
-        raw (str): the raw env string from CORS_ORIGINS (e.g., "http://a.com, http://b.com")
+        user (dict): the original user record including email
     returns:
-        List[str]: cleaned list of origins to allow
+        dict: a shallow copy of the user excluding 'email'
     """
-    return [o.strip() for o in (raw or "").split(",") if o.strip()]
+    # use dict comprehension to exclude the sensitive field
+    return {k: v for k, v in user.items() if k != "email"}
 
 
-def is_valid_id(candidate: str) -> bool:
+def get_all_users() -> List[Dict[str, str]]:
     """
-    validate if the candidate is a valid user id (numeric string).
+    return list of all users (without email field).
+
+    returns:
+        list[dict]: list of user dicts without 'email'
+    """
+    return [_strip_email(u) for u in USERS]
+
+
+def get_user_by_id(user_id: int) -> Optional[Dict[str, str]]:
+    """
+    return single user by id (without email field), or None if not found.
 
     params:
-        candidate (str): the string to validate
+        user_id (str): uuid of the requested user
     returns:
-        bool: True if candidate is a numeric id, else False
+        dict | None: user dict without 'email', or None if there is no match
     """
-    return candidate.strip().isdigit() if candidate else False
+    for u in USERS:
+        if u["id"] == user_id:
+            return _strip_email(u)
+    return None
 
 
-def register_error_handlers(app: Flask) -> None:
+def search_user_by_id(user_id: str) -> Optional[Dict[str, str]]:
     """
-    register json error handlers for common http errors (400/404/500).
+    search and return user by id (without email field), or None if not found.
 
     params:
-        app (Flask): the flask app instance
+        user_id (str): uuid to search for
     returns:
-        None
+        dict | None: user dict without 'email' if found, otherwise None
     """
-    @app.errorhandler(400)
-    def handle_400(err):
-        return jsonify({"error": {"code": 400, "message": "bad request"}}), 400
-
-    @app.errorhandler(404)
-    def handle_404(err):
-        return jsonify({"error": {"code": 404, "message": "not found"}}), 404
-
-    @app.errorhandler(500)
-    def handle_500(err):
-        # do not leak internal details in production
-        return jsonify({"error": {"code": 500, "message": "internal server error"}}), 500
-
-
-def add_security_headers(app: Flask) -> None:
-    """
-    attach minimal security headers to every response.
-
-    params:
-        app (Flask): the flask app instance
-    returns:
-        None
-    """
-    @app.after_request
-    def set_headers(resp: Response):
-        resp.headers["X-Content-Type-Options"] = "nosniff"
-        resp.headers["X-Frame-Options"] = "DENY"
-        return resp
-
-
-# -----------------------------------------------------------------------------
-# app factory
-# -----------------------------------------------------------------------------
-def create_app() -> Flask:
-    """
-    build and configure the flask application.
-
-    returns:
-        Flask: a configured flask app instance
-    """
-    # load env vars from .env if present (12-factor friendly)
-    load_dotenv()
-
-    # set up basic console logging; errors will go to stderr
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    logger = logging.getLogger(__name__)
-
-    app = Flask(__name__)
-
-    # secret key for session/signing; must be overridden in real deployments
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "change-this-in-production")
-
-    # set up strict cors using a whitelist from env (no wildcard)
-    origins = get_allowed_origins(os.getenv("CORS_ORIGINS", ""))
-    CORS(
-        app,
-        origins=origins,
-        supports_credentials=True,
-        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    )
-
-    # cross-cutting concerns
-    register_error_handlers(app)
-    add_security_headers(app)
-
-    # -------------------------------------------------------------------------
-    # healthcheck (useful for k8s/app runner/etc.)
-    # -------------------------------------------------------------------------
-    @app.get("/health")
-    def health():
-        """
-        lightweight health check endpoint.
-        """
-        return jsonify({"status": "ok"}), 200
-
-    # -------------------------------------------------------------------------
-    # api: list users
-    # -------------------------------------------------------------------------
-    @app.get("/api/users")
-    def api_list_users():
-        """
-        get all users (email excluded by the data layer).
-        returns:
-            200 json: {"users": [...], "total": n}
-            500 json on server error
-        """
-        try:
-            users = get_all_users()
-            return jsonify({"users": users, "total": len(users)}), 200
-        except Exception as exc:  # log and fall back to 500
-            logger.exception("failed to list users: %s", exc)
-            return jsonify({"error": "internal server error"}), 500
-
-    # -------------------------------------------------------------------------
-    # api: get user by id
-    # -------------------------------------------------------------------------
-    @app.get("/api/users/<user_id>")
-    def api_get_user(user_id: str):
-        """
-        get a single user by id.
-        returns:
-            200 json: {"user": {...}}
-            400 json if id format is invalid
-            404 json if user not found
-            500 json on server error
-        """
-        try:
-            if not is_valid_id(user_id):
-                return jsonify({"error": "invalid user id format"}), 400
-
-            user = get_user_by_id(user_id)
-            if user is None:
-                return jsonify({"error": "user not found"}), 404
-
-            return jsonify({"user": user}), 200
-        except Exception as exc:
-            logger.exception("failed to get user %s: %s", user_id, exc)
-            return jsonify({"error": "internal server error"}), 500
-
-    # -------------------------------------------------------------------------
-    # api: search user by id via query param
-    # -------------------------------------------------------------------------
-    @app.get("/api/users/search")
-    def api_search_user():
-        """
-        search a user by id passed as a query param `id`.
-        returns:
-            200 json: {"user": {...}} or {"user": null}
-            400 json if id param missing or invalid
-            500 json on server error
-        """
-        try:
-            user_id = request.args.get("id", "").strip()
-            if not user_id:
-                return jsonify({"error": "missing 'id' query parameter"}), 400
-
-            if not is_valid_id(user_id):
-                return jsonify({"error": "invalid user id format"}), 400
-
-            user = search_user_by_id(user_id)
-            # as required: return user or null (json null) if not found
-            return jsonify({"user": user if user is not None else None}), 200
-        except Exception as exc:
-            logger.exception("failed to search user: %s", exc)
-            return jsonify({"error": "internal server error"}), 500
-
-    return app
-
-
-# create the app instance for wsgi servers (e.g., gunicorn)
-app = create_app()
-
-
-if __name__ == "__main__":
-    # local/dev run; in production, prefer:
-    # gunicorn -w 4 -b 0.0.0.0:${PORT:-8000} app:app
-    port_str = os.getenv("PORT", "8000")
-    try:
-        port = int(port_str)
-    except ValueError:
-        port = 8000
-
-    app.run(host="0.0.0.0", port=port)
+    # identical semantics to get_user_by_id; kept to satisfy the api contract
+    for u in USERS:
+        if u["id"] == user_id:
+            return _strip_email(u)
+    return None
