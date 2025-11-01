@@ -258,7 +258,17 @@ jobs:
     steps:
       - name: Checkout SCM
         uses: actions/checkout@v4
-      
+        
+      - name: Setup kubeconfig from SSM
+        run: |
+          mkdir -p ~/.kube
+          aws ssm get-parameter \
+            --name kubeconfig \
+            --with-decryption \
+            --query 'Parameter.Value' \
+            --output text > ~/.kube/config
+          chmod 600 ~/.kube/config
+          
       # setup kubectl
       - name: Install kubectl
         uses: azure/setup-kubectl@v3
@@ -271,6 +281,7 @@ jobs:
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBECONFIG }}
+          
           
       - name: Verify connection
         run: kubectl cluster-info
