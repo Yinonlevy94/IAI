@@ -35,7 +35,7 @@ class TestListUsers:
         # should have users array and total count
         assert 'users' in data
         assert 'total' in data
-        assert len(data['users']) = 21
+        assert len(data['users']) == 21
     
     def test_email_not_exposed(self, client):
         """emails should never be in the response"""
