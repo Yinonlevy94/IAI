@@ -286,13 +286,11 @@ jobs:
           
           kubectl create namespace backend --dry-run=client -o yaml | kubectl apply -f -
           
-          kubectl -n backend create secret docker-registry ecr-secret \
-            --docker-server="${{ env.BACKEND_ECR_REGISTRY }}" \
-            --docker-username=AWS \
-            --docker-password="$TOKEN" \
+          kubectl -n backend create secret docker-registry ecr-secret --docker-server="${{ env.BACKEND_ECR_REGISTRY }}" --docker-username=AWS --docker-password="${TOKEN}" --dry-run=client -o yaml | kubectl -n backend apply -f -
+
             #idempotent secreet creation so that the old (still valid) secret wont be needed to be deleted
             #and also to make the pipeline continue even if theres already one
-            --dry-run=client -o yaml > ecr-be.yml
+            
             
           kubectl apply -f ecr-be.yml
           
