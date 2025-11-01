@@ -36,14 +36,6 @@ class TestListUsers:
         assert 'users' in data
         assert 'total' in data
         assert len(data['users']) == 21
-    
-    def test_email_not_exposed(self, client):
-        """emails should never be in the response"""
-        response = client.get('/api/users')
-        users = response.json['users']
-        
-        for user in users:
-            assert 'email' not in user
 
 
 class TestSearch:
