@@ -1,10 +1,6 @@
 """
 app.py
-production-minded flask api with:
-- env-driven config and strict cors
-- json-only responses and consistent error handling
-- minimal security headers
-- user endpoints (list, get, search) backed by mock data
+production-minded flask api with user endpoints (list, get, search) backed by mock data
 """
 
 import os
@@ -18,17 +14,14 @@ from dotenv import load_dotenv
 from data.users import get_all_users, search_user_by_id
 
 
-# -----------------------------------------------------------------------------
-# helpers
-# -----------------------------------------------------------------------------
 def get_allowed_origins(raw: str) -> List[str]:
     """
     parse a comma-separated origins string from env into a clean list.
 
     params:
-        raw (str): the raw env string from CORS_ORIGINS (e.g., "http://a.com, http://b.com")
+        raw (str): the raw env string from CORS_ORIGINS 
     returns:
-        List[str]: cleaned list of origins to allow
+        List[str]: cleaned list of origins to make it in the proper format
     """
     return [o.strip() for o in (raw or "").split(",") if o.strip()]
 
@@ -47,7 +40,7 @@ def is_valid_id(candidate: str) -> bool:
 
 def register_error_handlers(app: Flask) -> None:
     """
-    register json error handlers for common http errors (400/404/500).
+    register json error handlers for common http errors
 
     params:
         app (Flask): the flask app instance
@@ -64,7 +57,7 @@ def register_error_handlers(app: Flask) -> None:
 
     @app.errorhandler(500)
     def handle_500(err):
-        # do not leak internal details in production
+        # do not leak internal server details in production
         return jsonify({"error": {"code": 500, "message": "internal server error"}}), 500
 
 
@@ -79,14 +72,14 @@ def add_security_headers(app: Flask) -> None:
     """
     @app.after_request
     def set_headers(resp: Response):
+        #no sniff prevents browsers from guessing content types, which help defending against browser-ignoring-types kinds of attacks
         resp.headers["X-Content-Type-Options"] = "nosniff"
+        #prevents the site from being embedded in iframes, which stops clickjacking attacks 
         resp.headers["X-Frame-Options"] = "DENY"
         return resp
 
 
-# -----------------------------------------------------------------------------
-# app factory
-# -----------------------------------------------------------------------------
+
 def create_app() -> Flask:
     """
     build and configure the flask application.
@@ -94,7 +87,7 @@ def create_app() -> Flask:
     returns:
         Flask: a configured flask app instance
     """
-    # load env vars from .env if present (12-factor friendly)
+    # load env vars from .env if present 
     load_dotenv()
 
     # set up basic console logging; errors will go to stderr
