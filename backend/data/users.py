@@ -1,7 +1,11 @@
 """
 users.py
-mock user records 
+mock user records for a flask user-management api.
 
+notes
+- data is static but realistic and diverse
+- email stays server-side only and is stripped from responses
+- departments limited to: Engineering, HR, Sales, Marketing, Finance, Operations
 """
 
 from typing import List, Dict, Optional
@@ -224,12 +228,11 @@ USERS: List[Dict[str, str]] = [
 def _strip_email(user: Dict[str, str]) -> Dict[str, str]:
     """
     create a copy of a user dict without the 'email' field.
-    i've decided to cut it off since email usually uses as a username nowdays
 
     params:
         user (dict): the original user record including email
     returns:
-        dict: a shallow copy of the user excluding email
+        dict: a shallow copy of the user excluding 'email'
     """
     # use dict comprehension to exclude the sensitive field
     return {k: v for k, v in user.items() if k != "email"}
@@ -237,22 +240,22 @@ def _strip_email(user: Dict[str, str]) -> Dict[str, str]:
 
 def get_all_users() -> List[Dict[str, str]]:
     """
-    return list of all users.
+    return list of all users (without email field).
 
     returns:
-        list[dict]: list of user dicts without email
+        list[dict]: list of user dicts without 'email'
     """
     return [_strip_email(u) for u in USERS]
 
 
 def get_user_by_id(user_id: int) -> Optional[Dict[str, str]]:
     """
-    return single user by id , or None if not found.
+    return single user by id (without email field), or None if not found.
 
     params:
         user_id (str): uuid of the requested user
     returns:
-        dict | None: user dict without email, or None if there is no match
+        dict | None: user dict without 'email', or None if there is no match
     """
     for u in USERS:
         if u["id"] == user_id:
@@ -260,17 +263,17 @@ def get_user_by_id(user_id: int) -> Optional[Dict[str, str]]:
     return None
 
 
- def search_user_by_id(user_id: str) -> Optional[Dict[str, str]]:
-     """
-     search and return user by id (without email field), or None if not found.
+def search_user_by_id(user_id: str) -> Optional[Dict[str, str]]:
+    """
+    search and return user by id (without email field), or None if not found.
 
-     params:
-         user_id (str): uuid to search for
-     returns:
-         dict | None: user dict without 'email' if found, otherwise None
-     """
-     # identical semantics to get_user_by_id; kept to satisfy the api contract
-     for u in USERS:
-         if u["id"] == user_id:
-             return _strip_email(u)
-     return None
+    params:
+        user_id (str): uuid to search for
+    returns:
+        dict | None: user dict without 'email' if found, otherwise None
+    """
+    # identical semantics to get_user_by_id; kept to satisfy the api contract
+    for u in USERS:
+        if u["id"] == user_id:
+            return _strip_email(u)
+    return None
