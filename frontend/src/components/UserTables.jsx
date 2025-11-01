@@ -6,7 +6,7 @@
  * 
  * params:
  *   rows: array of user objects with id, name, email
- */
+ 
 export default function UsersTable({ rows = [] }) {
   return (
     <div className="w-full overflow-x-auto bg-white border border-borderClr rounded-xl shadow-soft">
@@ -31,3 +31,4 @@ export default function UsersTable({ rows = [] }) {
     </div>
   )
 }
+*/
