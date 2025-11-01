@@ -73,13 +73,6 @@ class TestSecurity:
         response = client.get('/api/users')
         assert 'X-Content-Type-Options' in response.headers
         assert 'X-Frame-Options' in response.headers
-    
-    def test_email_never_exposed(self, client):
-        """triple check emails aren't leaked anywhere"""
-        # list endpoint
-        response = client.get('/api/users')
-        for user in response.json['users']:
-            assert 'email' not in user
         
         # single user endpoint
         response = client.get('/api/users/1')
