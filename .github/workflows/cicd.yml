@@ -290,8 +290,8 @@ jobs:
             --docker-password=$TOKEN \
             #idempotent secreet creation so that the old (still valid) secret wont be needed to be deleted
             #and also to make the pipeline continue even if theres already one
-            --dry-run=client -o yaml | kubectl apply -f -
-
+            --dry-run=client -o yaml > ecr-be.yml
+          kubectl apply -f /ecr-be.yml
           
           
           kubectl create namespace frontend --dry-run=client -o yaml | kubectl apply -f -
@@ -299,7 +299,8 @@ jobs:
             --docker-server=${{ env.FRONTEND_ECR_REGISTRY }} \
             --docker-username=AWS \
             --docker-password=$TOKEN \
-            --dry-run=client -o yaml | kubectl apply -f -
+            --dry-run=client -o yaml > ecr-fe.yml
+          kubectl apply -f /ecr-fe.yml
 
       
       # deploy backend
@@ -307,14 +308,14 @@ jobs:
         run: |
           kubectl apply -f backend/backend-deployment.yml
           kubectl apply -f backend/service.yml
-          kubectl rollout status deployment/backend -n backend --timeout=5m
+          kubectl rollout status deployment/backend -n backend --timeout=3m
       
       # deploy frontend
       - name: Deploy frontend
         run: |
           kubectl apply -f frontend/frontend-deployment.yml
           kubectl apply -f frontend/service+ingress.yml
-          kubectl rollout status deployment/frontend -n frontend --timeout=5m
+          kubectl rollout status deployment/frontend -n frontend --timeout=3m
       
       # verify deployment
       - name: Verify deployment
