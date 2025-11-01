@@ -251,7 +251,7 @@ jobs:
           
   deploy:
     name: Deploy to cluster
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [backend, frontend]  # dependant on be and fe tasks
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
