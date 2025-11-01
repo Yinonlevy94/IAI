@@ -1,16 +1,11 @@
 """
 users.py
-mock user records for a flask user-management api.
-
-notes
-- data is static but realistic and diverse
-- email stays server-side only and is stripped from responses
-- departments limited to: Engineering, HR, Sales, Marketing, Finance, Operations
+mock user records 
 """
 
 from typing import List, Dict, Optional
 
-# users are stored as a list of dictionaries per the requirements
+# users are stored as a list of dictionaries
 USERS: List[Dict[str, str]] = [
     {
         "id": "1",
@@ -227,12 +222,12 @@ USERS: List[Dict[str, str]] = [
 
 def _strip_email(user: Dict[str, str]) -> Dict[str, str]:
     """
-    create a copy of a user dict without the 'email' field.
-
+    create a copy of a user dict without the email
+    i did this since nowdays emails is kinda regarded as a username, so we dont wanna expose user's data
     params:
         user (dict): the original user record including email
     returns:
-        dict: a shallow copy of the user excluding 'email'
+        dict: a shallow copy of the user excluding email
     """
     # use dict comprehension to exclude the sensitive field
     return {k: v for k, v in user.items() if k != "email"}
@@ -240,22 +235,22 @@ def _strip_email(user: Dict[str, str]) -> Dict[str, str]:
 
 def get_all_users() -> List[Dict[str, str]]:
     """
-    return list of all users (without email field).
+    return list of all users 
 
     returns:
-        list[dict]: list of user dicts without 'email'
+        list[dict]: list of user dicts without email
     """
     return [_strip_email(u) for u in USERS]
 
 
 def get_user_by_id(user_id: int) -> Optional[Dict[str, str]]:
     """
-    return single user by id (without email field), or None if not found.
+    return single user by id , or None if not found.
 
     params:
         user_id (str): uuid of the requested user
     returns:
-        dict | None: user dict without 'email', or None if there is no match
+        dict | None: user dict without email, or None if there is no match
     """
     for u in USERS:
         if u["id"] == user_id:
