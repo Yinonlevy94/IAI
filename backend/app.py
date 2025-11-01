@@ -97,38 +97,33 @@ def create_app() -> Flask:
     app = Flask(__name__)
 
     # set up strict cors using a whitelist from env (no wildcard)
-    origins = get_allowed_origins(os.getenv("CORS_ORIGINS", ""))
+    origins = get_allowed_origins(os.getenv("CORS_ORIGINS", "")) #gets the fe's port
     CORS(
         app,
-        origins=origins,
-        supports_credentials=True,
+        origins=origins, #whitelists only the fe
         methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     )
 
-    # cross-cutting concerns
-    register_error_handlers(app)
-    add_security_headers(app)
+   
+    register_error_handlers(app) #catches any error thrown by endpoint
+    add_security_headers(app) #add a asecurity header when any response is sent
 
-    # -------------------------------------------------------------------------
-    # healthcheck (useful for k8s/app runner/etc.)
-    # -------------------------------------------------------------------------
+  
     @app.get("/health")
     def health():
         """
-        lightweight health check endpoint.
+        health check endpoint.
         """
         return jsonify({"status": "ok"}), 200
 
-    # -------------------------------------------------------------------------
-    # api: list users
-    # -------------------------------------------------------------------------
+    
     @app.get("/api/users")
     def api_list_users():
         """
-        get all users (email excluded by the data layer).
+        get all users 
         returns:
             200 json: {"users": [...], "total": n}
-            500 json on server error
+            500 json on int-server error
         """
         try:
             users = get_all_users()
@@ -138,9 +133,7 @@ def create_app() -> Flask:
             return jsonify({"error": "internal server error"}), 500
 
     
-    # -------------------------------------------------------------------------
-    # api: search user by id via query param
-    # -------------------------------------------------------------------------
+    
     @app.get("/api/users/search")
     def api_search_user():
         """
@@ -159,7 +152,6 @@ def create_app() -> Flask:
                 return jsonify({"error": "invalid user id format"}), 400
 
             user = search_user_by_id(user_id)
-            # as required: return user or null (json null) if not found
             return jsonify({"user": user if user is not None else None}), 200
         except Exception as exc:
             logger.exception("failed to search user: %s", exc)
@@ -168,13 +160,11 @@ def create_app() -> Flask:
     return app
 
 
-# create the app instance for wsgi servers (e.g., gunicorn)
+# create the app instance for wsgi server (guni)
 app = create_app()
 
 
 if __name__ == "__main__":
-    # local/dev run; in production, prefer:
-    # gunicorn -w 4 -b 0.0.0.0:${PORT:-8000} app:app
     port_str = os.getenv("PORT", "8000")
     try:
         port = int(port_str)
