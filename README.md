@@ -55,6 +55,8 @@ This project delivers a full CI/CD pipeline for deploying cloud-native microserv
   <img src="./CICD.png" width="900" />
 </p>
 
+
+
 1. main branch push triggers full pipeline
 2. **CI (GitHub-hosted runners):**
    - Run tests (Python + Node)
