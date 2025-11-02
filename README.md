@@ -81,7 +81,7 @@ This project delivers a full CI/CD pipeline for deploying cloud-native microserv
 ---
 ## The app
 
-The app is accessible on: [IAI-Assignment]((https://iai.yinonlevy.online))
+The app is accessible on: https://iai.yinonlevy.online
 
 
 
