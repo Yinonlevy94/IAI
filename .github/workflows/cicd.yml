@@ -295,22 +295,25 @@ jobs:
           kubectl create namespace frontend --dry-run=client -o yaml | kubectl apply -f -
           kubectl -n frontend create secret docker-registry ecr-secret --docker-server="${{ env.FRONTEND_ECR_REGISTRY }}" --docker-username=AWS --docker-password="${TOKEN}" --dry-run=client -o yaml | kubectl -n frontend apply -f -
           
-      - name: Get backend image digest         
-        id: be                                     
+      - name: Get backend image digest
+        id: be
         env:
           REGISTRY: ${{ env.BACKEND_ECR_REGISTRY }}
-          REPO: ${{ env.BACKEND_IMAGE }}           
-          TAG: ${{ github.sha }}                  
+          REPO: ${{ env.BACKEND_IMAGE }}
+          TAG: ${{ github.sha }}
         run: |
           DIGEST=$(aws ecr describe-images \
-            --repository-name "${REPO}" \          
-            --image-ids imageTag="${TAG}" \        
+            --repository-name "${REPO}" \
+            --image-ids imageTag="${TAG}" \
             --query 'imageDetails[0].imageDigest' \
-            --output text)      
-          [ -n "${DIGEST}" ] && [ "${DIGEST}" != "None" ] || { echo "no digest"; exit 1; } # fail if missing/None
-          DIG_IMG_REF="${REGISTRY}/${REPO}@${DIGEST}"         
-          echo "fq_ref=${DIG_IMG_REF}" >> "$GITHUB_OUTPUT"   # exporting fully qualified img to steps for digest check
+            --output text)
+          [ -n "${DIGEST}" ] && [ "${DIGEST}" != "None" ] || { echo "no digest"; exit 1; }
+          DIG_IMG_REF="${REGISTRY}/${REPO}@${DIGEST}"
+          echo "fq_ref=${DIG_IMG_REF}" >> "$GITHUB_OUTPUT"
 
+          # exporting fully qualified img to steps for digest check
+          # fail if missing/None
+          
       - name: Verify backend image signature (cosign)
         run: |
           cosign verify \
