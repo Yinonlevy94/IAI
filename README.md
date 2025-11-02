@@ -62,7 +62,8 @@ This project delivers a full CI/CD pipeline for deploying cloud-native microserv
    - Sign images with Sigstore (cosign)
 3. **CD (self-hosted runner in VPC):**
    - Uses inject kubeconfig for context
-   - Refresh ECR registry secret 
+   - Refresh ECR registry secret
+   - Confirm images digest
    - Apply Kubernetes manifests
    - Verify rollout success
 
