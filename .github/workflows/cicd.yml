@@ -302,7 +302,7 @@ jobs:
           REPO: ${{ env.BACKEND_IMAGE }}           
           TAG: ${{ github.sha }}                  
         run: |
-          DIGEST=$(aws ecr describe-images \      
+          DIGEST=$(aws ecr describe-images \
             --repository-name "${REPO}" \          
             --image-ids imageTag="${TAG}" \        
             --query 'imageDetails[0].imageDigest' \
