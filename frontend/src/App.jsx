@@ -1,9 +1,9 @@
-// src/App.jsx
+
 // minimal users dashboard with search and list functionality
 
 import React, { useEffect, useState } from "react"
 
-// api base url - reads from env var set at build time, falls back to /api
+// api base url - reads from .env set at build time, or in prod falls back to /api
 const BASE = import.meta.env.VITE_API_BASE ?? "/api"
 
 /**
@@ -37,6 +37,7 @@ function prettyDate(iso) {
   if (!iso) return ""
   const d = new Date(iso)
   return isNaN(d.getTime()) ? String(iso) : d.toISOString().slice(0, 10)
+  //checks if validand returns a formatted date, else return the original string
 }
 
 /**
@@ -48,8 +49,8 @@ function prettyDate(iso) {
 function Row({ user }) {
   const fullName = [user?.first_name, user?.last_name].filter(Boolean).join(" ")
   
-  // metadata column - shows all user fields as key:value pairs
-  const metadata = Object.entries(user || {})
+  // metadata col that shows the rest of the fields
+  const metadata = Object.entries(user || {})  // convert a user into k/v array
     .map(([k, v]) => `${k}: ${v ?? ""}`)
     .join(" | ")
   
@@ -89,7 +90,7 @@ function Table({ users }) {
         </thead>
         <tbody className="divide-y divide-slate-200">
           {users.map((u) => (
-            <Row key={u.id} user={u} />
+            <Row key={u.id} user={u} /> 
           ))}
         </tbody>
       </table>
@@ -98,7 +99,7 @@ function Table({ users }) {
 }
 
 export default function App() {
-  const [query, setQuery] = useState("")
+  const [query, setQuery] = useState("") 
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -113,10 +114,10 @@ export default function App() {
    */
   async function fetchAll() {
     setLoading(true)
-    setError("")
+    setError("")   
     try {
       const data = await fetchJson(`${BASE}/users`)
-      // handle different response shapes - some apis wrap in data or users key
+      // makes an api call
       const arr = data?.users || data?.data || (Array.isArray(data) ? data : [])
       setUsers(arr)
     } catch (e) {
@@ -131,7 +132,7 @@ export default function App() {
    * search for a single user by id.
    */
   async function searchById() {
-    const id = String(query || "").trim()
+    const id = String(query || "").trim() 
     if (!id) return
     
     setLoading(true)
