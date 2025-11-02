@@ -138,7 +138,7 @@ export default function App() {
     setLoading(true)
     setError("")
     try {
-      const data = await fetchJson(`${BASE}/users/${encodeURIComponent(id)}`)
+      const data = await fetchJson(`${BASE}/users/search?id=${encodeURIComponent(id)}`)
       const user = data?.user || data
       setUsers(user ? [user] : [])
       if (!user) setError("no result")
