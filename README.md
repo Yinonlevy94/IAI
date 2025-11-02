@@ -10,7 +10,7 @@ This project delivers a full CI/CD pipeline for deploying cloud-native microserv
 
 
 <p align="center">
-  <img src="./arch.png" width="900" />
+  <img src="./Arch.png" width="900" />
 </p>
 
 
@@ -50,6 +50,10 @@ This project delivers a full CI/CD pipeline for deploying cloud-native microserv
 ---
 
 ##  CI/CD Flow
+
+<p align="center">
+  <img src="./CICD.png" width="900" />
+</p>
 
 1. main branch push triggers full pipeline
 2. **CI (GitHub-hosted runners):**
