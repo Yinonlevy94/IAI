@@ -252,9 +252,9 @@ def get_user_by_id(user_id: Union[str, int]) -> Optional[Dict[str, str]]:
     returns:
         dict | None: user dict without 'email', or None if there is no match
     """
-    uid = str(user_id)
+    uid = str(int(str(user_id).strip()))            
     for u in USERS:
-        if u["id"] == uid:
+        if str(int(str(u.get("id", "")).strip())) == uid:
             return _strip_email(u)
     return None
     
