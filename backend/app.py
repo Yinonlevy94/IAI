@@ -134,28 +134,29 @@ def create_app() -> Flask:
 
     
     
-    @app.get("/api/users/search")
-    def api_search_user():
+    @app.get("/api/users/<user_id>")
+    def api_get_user(user_id):
         """
-        search a user by id passed as a query param `id`.
+        get a single user by id (path param).
         returns:
-            200 json: {"user": {...}} or {"user": null}
-            400 json if id param missing or invalid
+            200 json: {"user": {...}} if found
+            400 json if id invalid
+            404 json if not found
             500 json on server error
         """
         try:
-            user_id = request.args.get("id", "").strip()
-            if not user_id:
-                return jsonify({"error": "missing 'id' query parameter"}), 400
-
-            if not is_valid_id(user_id):
+            if not is_valid_id(user_id):  
                 return jsonify({"error": "invalid user id format"}), 400
-
-            user = search_user_by_id(user_id)
-            return jsonify({"user": user if user is not None else None}), 200
+    
+            user = get_user_by_id(user_id)  
+            if user is None:
+                return jsonify({"error": "not found"}), 404
+    
+            return jsonify({"user": user}), 200
         except Exception as exc:
-            logger.exception("failed to search user: %s", exc)
+            logger.exception("failed to get user: %s", exc)
             return jsonify({"error": "internal server error"}), 500
+
 
     return app
 
