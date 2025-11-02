@@ -294,8 +294,31 @@ jobs:
 
           kubectl create namespace frontend --dry-run=client -o yaml | kubectl apply -f -
           kubectl -n frontend create secret docker-registry ecr-secret --docker-server="${{ env.FRONTEND_ECR_REGISTRY }}" --docker-username=AWS --docker-password="${TOKEN}" --dry-run=client -o yaml | kubectl -n frontend apply -f -
+          
+      - name: Get backend image digest         
+        id: be                                     
+        env:
+          REGISTRY: ${{ env.BACKEND_ECR_REGISTRY }}
+          REPO: ${{ env.BACKEND_IMAGE }}           
+          TAG: ${{ github.sha }}                  
+        run: |
+          DIGEST=$(aws ecr describe-images \       # ask ECR for digest
+            --repository-name "${REPO}" \          
+            --image-ids imageTag="${TAG}" \        
+            --query 'imageDetails[0].imageDigest' \
+            --output text)                         
+          [ -n "${DIGEST}" ] && [ "${DIGEST}" != "None" ] || { echo "no digest"; exit 1; } # fail if missing/None
+          DIG_IMG_REF="${REGISTRY}/${REPO}@${DIGEST}"         
+          echo "fq_ref=${DIG_IMG_REF}" >> "$GITHUB_OUTPUT"   # exporting fully qualified img to steps for digest check
+
+      - name: Verify backend image signature (cosign)
+        run: |
+          cosign verify \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \  # only trust sigs that were made by github's OIDC identity provider
+            --certificate-identity-regexp "https://github.com/${{ github.repository }}(/|$).*" \ # a regex solution for flucio's identity string 
+            "${{ steps.be.outputs.fq_ref }}"
+
       
-      # deploy backend
       - name: Deploy backend
         env:
           GIT_SHA: ${{ github.sha }}
@@ -307,7 +330,6 @@ jobs:
           kubectl -n backend rollout status deploy/backend --timeout=3m
 
       
-      # deploy frontend
       - name: Deploy frontend
         env: 
           GIT_SHA: ${{ github.sha }}
