@@ -302,11 +302,12 @@ jobs:
           REPO: ${{ env.BACKEND_IMAGE }}           
           TAG: ${{ github.sha }}                  
         run: |
-          DIGEST=$(aws ecr describe-images \       # ask ECR for digest
+          DIGEST=$(aws ecr describe-images \      
             --repository-name "${REPO}" \          
             --image-ids imageTag="${TAG}" \        
             --query 'imageDetails[0].imageDigest' \
-            --output text)                         
+            --output text)      
+           # ask ECR for digest
           [ -n "${DIGEST}" ] && [ "${DIGEST}" != "None" ] || { echo "no digest"; exit 1; } # fail if missing/None
           DIG_IMG_REF="${REGISTRY}/${REPO}@${DIGEST}"         
           echo "fq_ref=${DIG_IMG_REF}" >> "$GITHUB_OUTPUT"   # exporting fully qualified img to steps for digest check
