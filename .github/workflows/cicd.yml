@@ -313,7 +313,12 @@ jobs:
 
           # exporting fully qualified img to steps for digest check
           # fail if missing/None
+
           
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+        
       - name: Verify backend image signature (cosign)
         run: |
           cosign verify \
