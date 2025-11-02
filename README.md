@@ -78,6 +78,7 @@ This project delivers a full CI/CD pipeline for deploying cloud-native microserv
 - SBOM provides full dependency visibility
 
 ---
+## The app
 
-
+The app is accessible on: iai.yinonlevy.online
 
