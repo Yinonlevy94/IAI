@@ -321,6 +321,14 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@v3
 
+      # auth to ECR for cosign (no docker on runner required)
+      - name: Cosign login to ECR
+        run: |
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} \
+            | cosign login -u AWS --password-stdin ${{ env.BACKEND_ECR_REGISTRY }}
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} \
+            | cosign login -u AWS --password-stdin ${{ env.FRONTEND_ECR_REGISTRY }}
+
       - name: Login to ECR (needed for cosign verify)
         uses: aws-actions/amazon-ecr-login@v2
         
