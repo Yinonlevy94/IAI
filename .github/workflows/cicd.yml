@@ -322,9 +322,10 @@ jobs:
       - name: Verify backend image signature (cosign)
         run: |
           cosign verify \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \  
-            --certificate-identity-regexp "https://github.com/${{ github.repository }}(/|$).*" \ 
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            --certificate-identity-regexp "https://github.com/Yinonlevy94/IAI(/|$).*" \
             "${{ steps.be.outputs.fq_ref }}"
+
           # only trust sigs that were made by github's OIDC identity provider
           # and i used regex solution for flucio's identity string 
           
