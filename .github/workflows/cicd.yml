@@ -326,7 +326,7 @@ jobs:
           aws ecr get-login-password --region ${{ env.AWS_REGION }} \
             | cosign login -u AWS --password-stdin ${{ env.FRONTEND_ECR_REGISTRY }}
         
-      - name: Verify backend image signature (cosign)
+      - name: Verify backend image signature 
         run: |
           cosign verify \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
@@ -346,7 +346,29 @@ jobs:
           kubectl -n backend apply -f backend/service.yml
           kubectl -n backend rollout status deploy/backend --timeout=3m
 
-      
+      - name: Get frontend image digest
+        id: fe
+        env:
+          REGISTRY: ${{ env.FRONTEND_ECR_REGISTRY }}
+          REPO: ${{ env.FRONTEND_IMAGE }}
+          TAG: ${{ github.sha }}
+        run: |
+          DIGEST=$(aws ecr describe-images \
+            --repository-name "${REPO}" \
+            --image-ids imageTag="${TAG}" \
+            --query 'imageDetails[0].imageDigest' \
+            --output text)
+          [ -n "${DIGEST}" ] && [ "${DIGEST}" != "None" ] || { echo "no digest"; exit 1; }
+          DIG_IMG_REF="${REGISTRY}/${REPO}@${DIGEST}"
+          echo "fq_ref=${DIG_IMG_REF}" >> "$GITHUB_OUTPUT"
+       
+      - name: Verify frontend image signature 
+        run: |
+          cosign verify \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            --certificate-identity-regexp "https://github.com/${{ github.repository }}(/|$).*" \
+            "${{ steps.fe.outputs.fq_ref }}"
+
       - name: Deploy frontend
         env: 
           GIT_SHA: ${{ github.sha }}
