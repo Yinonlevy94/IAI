@@ -3,7 +3,7 @@ users.py
 mock user records 
 """
 
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 
 # users are stored as a list of dictionaries
 USERS: List[Dict[str, str]] = [
@@ -243,7 +243,7 @@ def get_all_users() -> List[Dict[str, str]]:
     return [_strip_email(u) for u in USERS]
 
 
-def get_user_by_id(user_id: int) -> Optional[Dict[str, str]]:
+def get_user_by_id(user_id: Union[str, int]) -> Optional[Dict[str, str]]:
     """
     return single user by id (without email field), or None if not found.
 
@@ -252,22 +252,9 @@ def get_user_by_id(user_id: int) -> Optional[Dict[str, str]]:
     returns:
         dict | None: user dict without 'email', or None if there is no match
     """
+    uid = str(user_id)
     for u in USERS:
-        if u["id"] == user_id:
+        if u["id"] == uid:
             return _strip_email(u)
     return None
     
-def search_user_by_id(user_id: str) -> Optional[Dict[str, str]]:
-     """
-     search and return user by id (without email field), or None if not found.
-
-     params:
-         user_id (str): uuid to search for
-     returns:
-         dict | None: user dict without 'email' if found, otherwise None
-     """
-    
-     for u in USERS:
-         if u["id"] == user_id:
-             return _strip_email(u)
-     return None
