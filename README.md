@@ -10,7 +10,7 @@ This project delivers a full CI/CD pipeline for deploying cloud-native microserv
 
 
 <p align="center">
-  <img src="./image.png" width="900" />
+  <img src="./arch.png" width="900" />
 </p>
 
 
