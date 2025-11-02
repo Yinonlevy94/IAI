@@ -145,13 +145,11 @@ def create_app() -> Flask:
             500 json on server error
         """
         try:
-            if not is_valid_id(user_id):  
+            if not is_valid_id(user_id):
                 return jsonify({"error": "invalid user id format"}), 400
-    
-            user = get_user_by_id(user_id)  
+            user = get_user_by_id(user_id)
             if user is None:
                 return jsonify({"error": "not found"}), 404
-    
             return jsonify({"user": user}), 200
         except Exception as exc:
             logger.exception("failed to get user: %s", exc)
