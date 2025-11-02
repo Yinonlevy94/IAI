@@ -243,18 +243,31 @@ def get_all_users() -> List[Dict[str, str]]:
     return [_strip_email(u) for u in USERS]
 
 
-
-def search_user_by_id(user_id: str) -> Optional[Dict[str, str]]:
+def get_user_by_id(user_id: int) -> Optional[Dict[str, str]]:
     """
-    search and return user by id (without email field), or None if not found.
+    return single user by id (without email field), or None if not found.
 
     params:
-        user_id (str): uuid to search for
+        user_id (str): uuid of the requested user
     returns:
-        dict | None: user dict without 'email' if found, otherwise None
+        dict | None: user dict without 'email', or None if there is no match
     """
-    # identical semantics to get_user_by_id; kept to satisfy the api contract
     for u in USERS:
         if u["id"] == user_id:
             return _strip_email(u)
     return None
+    
+# def search_user_by_id(user_id: str) -> Optional[Dict[str, str]]:
+#     """
+#     search and return user by id (without email field), or None if not found.
+
+#     params:
+#         user_id (str): uuid to search for
+#     returns:
+#         dict | None: user dict without 'email' if found, otherwise None
+#     """
+    
+#     for u in USERS:
+#         if u["id"] == user_id:
+#             return _strip_email(u)
+#     return None
