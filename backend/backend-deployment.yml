@@ -27,7 +27,8 @@ spec:
         - name: ecr-secret
       containers:
       - name: backend
-        image: 422491854465.dkr.ecr.us-east-1.amazonaws.com/iai-task-backend:latest
+        image: $BACKEND_REGISTRY/$BACKEND_IMAGE:$GIT_SHA
+        imagePullPolicy: Always
         ports:
         - containerPort: 8000
 
