@@ -300,14 +300,21 @@ jobs:
         run: |
           kubectl apply -f backend/backend-deployment.yml
           kubectl apply -f backend/service.yml
-          kubectl rollout status deployment/backend -n backend --timeout=3m
+          # force the Deployment to use the freshly-pushed commit tag
+          kubectl -n backend set image deploy/backend \
+            backend=${{ env.BACKEND_ECR_REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          kubectl -n backend rollout status deploy/backend --timeout=3m
+
       
       # deploy frontend
       - name: Deploy frontend
         run: |
           kubectl apply -f frontend/frontend-deployment.yml
           kubectl apply -f frontend/service+ingress.yml
-          kubectl rollout status deployment/frontend -n frontend --timeout=3m
+          kubectl -n frontend set image deploy/frontend \
+            frontend=${{ env.FRONTEND_ECR_REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          kubectl -n frontend rollout status deploy/frontend --timeout=3m
+
       
       # verify deployment
       - name: Verify deployment
